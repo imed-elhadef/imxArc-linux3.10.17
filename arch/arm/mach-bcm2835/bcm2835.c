@@ -26,13 +26,9 @@
 #define PM_RSTC				0x1c
 #define PM_RSTS				0x20
 #define PM_WDOG				0x24
-#define PM_SDC				0x18
-#define PM_MNT				0x10
-
 
 #define PM_PASSWORD			0x5a000000
 #define PM_RSTC_WRCFG_MASK		0x00000030
-#define PM_RSTC_WRCFG_SDC		0x00000038
 #define PM_RSTC_WRCFG_FULL_RESET	0x00000020
 #define PM_RSTS_HADWRH_SET		0x00000040
 
@@ -67,7 +63,7 @@ static void bcm2835_restart(char mode, const char *cmd)
 	/* use a timeout of 10 ticks (~150us) */
 	writel_relaxed(10 | PM_PASSWORD, wdt_regs + PM_WDOG);
 	val = readl_relaxed(wdt_regs + PM_RSTC);
-	val &= ~PM_RSTC_WRCFG_SDC;
+	val &= ~PM_RSTC_WRCFG_MASK;
 	val |= PM_PASSWORD | PM_RSTC_WRCFG_FULL_RESET;
 	writel_relaxed(val, wdt_regs + PM_RSTC);
 
@@ -80,7 +76,7 @@ static void bcm2835_restart(char mode, const char *cmd)
  * indicate to bootcode.bin not to reboot, then most of the chip will be
  * powered off.
  */
-static void bcm2835_power_off_redo(void)
+static void bcm2835_power_off(void)
 {
 	u32 val;
 
@@ -90,11 +86,13 @@ static void bcm2835_power_off_redo(void)
 	 * hard reset.
 	 */
 	val = readl_relaxed(wdt_regs + PM_RSTS);
-	val &= ~PM_RSTC_WRCFG_SDC;
+	val &= ~PM_RSTC_WRCFG_MASK;
 	val |= PM_PASSWORD | PM_RSTS_HADWRH_SET;
 	writel_relaxed(val, wdt_regs + PM_RSTS);
 
-	}
+	/* Continue with normal reset mechanism */
+	bcm2835_restart(0, "");
+}
 
 static struct map_desc io_map __initdata = {
 	.virtual = BCM2835_PERIPH_VIRT,
