@@ -39,6 +39,21 @@
 static void __iomem *wdt_regs;
 
 /*
+ *Fake Module
+ */
+static void bcm2835_fake(void)
+{
+	struct device_node *np = of_find_compatible_node(NULL, NULL,
+						"fake");//Not defined
+	if (WARN(!np, "unable to setup fake module"))
+		return;
+
+	wdt_regs = of_iomap(np, 0);
+	WARN(!wdt_regs, "failed to initiate fake module");
+}
+
+
+/*
  * The machine restart method can be called from an atomic context so we won't
  * be able to ioremap the regs then.
  */
